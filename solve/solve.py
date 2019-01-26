@@ -66,16 +66,44 @@ def parse_input(input_file):
     return inp
 
 
+def persist_last(persist_alias):
+    print("Persisting last results and current code")
+
+    solution_dir, persist_dir = _persist_dirs(persist_alias)
+    output_dir = solution_dir.parent
+
+    print("Copying solution package to persist dir")
+    shutil.copytree(str(solution_dir), str(persist_dir))
+
+    print("Copying last outputs to persist dir")
+    for src in output_dir.glob('*.out'):
+        shutil.copy(str(src), str(persist_dir))
+
+
+def persist(persist_alias):
+    solution_dir, persist_dir = _persist_dirs(persist_alias)
+
+    print("Copying solution package to persist dir")
+    shutil.copytree(str(solution_dir), str(persist_dir))
+    return persist_dir
+
+
+def _persist_dirs(alias):
+    solution_dir = Path(__file__).parent
+    persist_base_dir = solution_dir.parent / 'persist'
+    persist_base_dir.mkdir(parents=True, exist_ok=True)
+    persist_dir = persist_base_dir / '{}_{}'.format(datetime.now().strftime('%H%M%S'), alias)
+    return solution_dir, persist_dir
+
+
 def main(args):
+    if args.persist_last:
+        persist_last(args.persist_last)
+        return
+
     persist_dir = None
     if args.persist:
-        solution_dir = Path(__file__).parent
-        persist_base_dir = solution_dir.parent / 'persist'
-        persist_base_dir.mkdir(parents=True, exist_ok=True)
-        persist_dir = persist_base_dir / '{}_{}'.format(datetime.now().strftime('%H%M%S'), args.persist)
-
-        print("Copying solution package to persist dir")
-        shutil.copytree(str(solution_dir), str(persist_dir))
+        persist_dir = persist(args.persist)
 
     jobs = [delayed(solve)(input_file, persist_dir, args.checker) for input_file in args.input_files]
     cpus = -1 if args.parallel else 1
@@ -88,6 +116,8 @@ def get_parser():
     parser.add_argument('--parallel', action='store_true')
     parser.add_argument('--checker', action='store_true')
     parser.add_argument('--persist', type=str, default=None)
+    parser.add_argument('--persist-last', type=str, default=None,
+                        help="Persist current code and outputs of last run and then exit.")
     return parser
 
 
