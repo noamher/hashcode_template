@@ -63,12 +63,14 @@ def parse_input(input_file):
     return inp
 
 
-def persist(persist_alias, output_dir):
+def persist(persist_alias, output_dir, solution_dir):
     persist_dir = _persist_dir(persist_alias)
 
-    print("Copying solution package to persist dir")
+    print("Copying outputs to persist dir")
     shutil.copytree(str(output_dir), str(persist_dir))
-    return persist_dir
+
+    print("Copying solution package to persist dir")
+    shutil.copytree(str(solution_dir), str(persist_dir / 'solve'))
 
 
 def _persist_dir(alias):
@@ -83,7 +85,8 @@ def main(args):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if args.persist:
-        persist(args.persist, output_dir)
+        solution_dir = Path(__file__).parent
+        persist(args.persist, output_dir, solution_dir)
         return
 
     # erase previous results
